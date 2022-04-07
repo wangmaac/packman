@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-enum State {start, moving, block};
+enum EnemyState { start, moving, block }
+enum Direction { left, right, up, down, hold }
 final List<int> barriers = [
   0,
   1,
@@ -101,5 +102,5 @@ final List<int> barriers = [
   183,
   184,
   185,
-  186
+  186,
 ];
