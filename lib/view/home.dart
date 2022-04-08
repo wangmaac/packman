@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:packman/view/widgets/gameover.dart';
 import 'package:packman/view/widgets/path_black.dart';
 import 'package:packman/view/widgets/tiles.dart';
+
 import '../const/constants.dart';
 import 'widgets/enemy.dart';
 import 'widgets/gamefinish.dart';
@@ -167,7 +168,7 @@ class _HomeState extends State<Home> {
                           onChanged: (value) {
                             setState(() {
                               speed = value;
-                              gameSpeed = 600 - (speed.toInt() * 50);
+                              getGameSpeed(speed);
                             });
                           },
                           min: 1.0,
@@ -201,9 +202,14 @@ class _HomeState extends State<Home> {
     );
   }
 
+  getGameSpeed(double speed) {
+    gameSpeed = 600 - (speed.toInt() * 50);
+  }
+
   void setting() {
     enemyStartPosition = 12;
     playerStartPosition = 166;
+    getGameSpeed(speed);
     second = 0;
     myState = EnemyState.start;
     playerDirection = Direction.hold;
@@ -259,6 +265,8 @@ class _HomeState extends State<Home> {
           } else {
             myState = EnemyState.block;
           }
+          break;
+        default:
           break;
       }
     } else {
@@ -344,6 +352,7 @@ class _HomeState extends State<Home> {
 
   void runTime() {
     sTimer = Timer.periodic(const Duration(seconds: 1), (timer) => second++);
+
     timer = Timer.periodic(Duration(milliseconds: gameSpeed), (timer) {
       if (pathPoint.isEmpty) {
         endTime();
