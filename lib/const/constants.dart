@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 enum EnemyState { start, moving, block }
 enum Direction { left, right, up, down, hold }
+enum GameState { over, finish, game }
+
+List<int> pathPoint = [];
+List<int> getPoint = [];
 final List<int> barriers = [
   0,
   1,

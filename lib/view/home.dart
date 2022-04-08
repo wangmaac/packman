@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:packman/view/widgets/gameover.dart';
+import 'package:packman/view/widgets/path_black.dart';
 import 'package:packman/view/widgets/tiles.dart';
 import '../const/constants.dart';
 import 'widgets/enemy.dart';
-import 'widgets/joystick.dart';
+import 'widgets/gamefinish.dart';
 import 'widgets/path.dart';
 import 'widgets/player.dart';
 
@@ -19,85 +21,175 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int columnLine = 11;
   int rowLine = 17;
-  int enemyStartPosition = 12;
+  Timer? timer;
+  Timer? sTimer;
+  int second = 0;
 
-  int playerStartPosition = 166;
-  late Timer timer;
-
-  EnemyState myState = EnemyState.start;
+  double speed = 5.0;
+  int gameSpeed = 0;
 
   late Direction myDirection;
-  Direction playerDirection = Direction.hold;
+  GameState gameState = GameState.game;
+
+  late int enemyStartPosition = 12;
+  late int preEnemyPosition = 0;
+
+  int playerStartPosition = 166;
+  int prePlayerPosition = 0;
+
+  late EnemyState myState;
+  late Direction playerDirection;
 
   @override
   void initState() {
-    timer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      enemyMoving();
-      playerMoving();
-    });
+    setting();
     super.initState();
   }
 
   @override
   void dispose() {
-    timer.cancel();
+    if (timer != null) {
+      timer!.cancel();
+    }
+    if (sTimer != null) {
+      sTimer!.cancel();
+    }
     super.dispose();
+  }
+
+  getPoints(int position) {
+    if (pathPoint.contains(position)) {
+      getPoint.add(position);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Scaffold(
+        appBar: AppBar(
+          title: const Text('웰리브 League'),
+          backgroundColor: Colors.black,
+          actions: [
+            IconButton(
+                onPressed: () {
+                  showModalBottomSheet<void>(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Container(
+                        height: MediaQuery.of(context).size.height / 2,
+                        color: Colors.amber,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              const Text('Modal BottomSheet'),
+                              ElevatedButton(
+                                child: const Text('Close BottomSheet'),
+                                onPressed: () => Navigator.pop(context),
+                              )
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+                icon: const Icon(Icons.smoking_rooms))
+          ],
+        ),
         backgroundColor: Colors.black,
         body: Column(
           children: [
             Expanded(
-              flex: 4,
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: GestureDetector(
-                  onVerticalDragUpdate: (detail) {
-                    if (detail.delta.dy > 0) {
-                      playerDirection = Direction.down;
-                    } else {
-                      playerDirection = Direction.up;
-                    }
-                  },
-                  onHorizontalDragUpdate: (detail) {
-                    if (detail.delta.dx > 0) {
-                      playerDirection = Direction.right;
-                    } else {
-                      playerDirection = Direction.left;
-                    }
-                  },
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columnLine),
-                    itemBuilder: (context, index) {
-                      if (barriers.contains(index)) {
-                        return const TileLine();
-                      } else if (index == enemyStartPosition) {
-                        return const Enemy();
-                      } else if (index == playerStartPosition) {
-                        return const Player();
-                      } else {
-                        return const PathLine();
-                      }
-                    },
-                    itemCount: columnLine * rowLine,
-                  ),
-                ),
-              ),
+              flex: 6,
+              child: gameState == GameState.over
+                  ? const GameOver()
+                  : gameState == GameState.finish
+                      ? GameFinish(
+                          score: getPoint.length,
+                          second: second,
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: GestureDetector(
+                              onVerticalDragUpdate: (detail) {
+                                if (detail.delta.dy > 0) {
+                                  playerDirection = Direction.down;
+                                } else {
+                                  playerDirection = Direction.up;
+                                }
+                              },
+                              onHorizontalDragUpdate: (detail) {
+                                if (detail.delta.dx > 0) {
+                                  playerDirection = Direction.right;
+                                } else {
+                                  playerDirection = Direction.left;
+                                }
+                              },
+                              child: GridView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: columnLine),
+                                itemBuilder: (context, index) {
+                                  if (barriers.contains(index)) {
+                                    return const TileLine();
+                                  } else if (index == enemyStartPosition) {
+                                    return const Enemy();
+                                  } else if (index == playerStartPosition) {
+                                    return const Player();
+                                  } else {
+                                    if (pathPoint.contains(index)) {
+                                      return const PathLine();
+                                    } else {
+                                      return const PathBlack();
+                                    }
+                                  }
+                                },
+                                itemCount: columnLine * rowLine,
+                              ))),
             ),
             Expanded(
               flex: 1,
               child: Row(
                 children: [
-                  const Expanded(child: JoyStick()),
+                  //const Expanded(child: JoyStick()),
                   Expanded(
-                    child: Container(
-                      color: Colors.blue,
+                      child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Slider.adaptive(
+                          value: speed,
+                          onChanged: (value) {
+                            setState(() {
+                              speed = value;
+                              gameSpeed = 600 - (speed.toInt() * 50);
+                            });
+                          },
+                          min: 1.0,
+                          max: 10.0,
+                        ),
+                        Text(
+                          '${speed.toInt()}',
+                          style: const TextStyle(color: Colors.white),
+                        )
+                      ],
+                    ),
+                  )),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        startButton(),
+/*                        Text(
+                          '${getPoint.length}점',
+                          style: const TextStyle(color: Colors.white),
+                        )*/
+                      ],
                     ),
                   ),
                 ],
@@ -109,12 +201,25 @@ class _HomeState extends State<Home> {
     );
   }
 
+  void setting() {
+    enemyStartPosition = 12;
+    playerStartPosition = 166;
+    second = 0;
+    myState = EnemyState.start;
+    playerDirection = Direction.hold;
+    getPoint.clear();
+    buildPathPoint();
+    getPoint.add(playerStartPosition);
+    pathPoint.remove(playerStartPosition);
+  }
+
   void enemyMoving() {
     if (myState == EnemyState.moving) {
       switch (myDirection) {
         case Direction.up:
           if (!barriers.contains(enemyStartPosition - columnLine)) {
             setState(() {
+              preEnemyPosition = enemyStartPosition;
               enemyStartPosition -= columnLine;
             });
             decideDirection(d: Direction.down);
@@ -125,6 +230,7 @@ class _HomeState extends State<Home> {
         case Direction.down:
           if (!barriers.contains(enemyStartPosition + columnLine)) {
             setState(() {
+              preEnemyPosition = enemyStartPosition;
               enemyStartPosition += columnLine;
             });
             decideDirection(d: Direction.up);
@@ -135,6 +241,7 @@ class _HomeState extends State<Home> {
         case Direction.left:
           if (!barriers.contains(enemyStartPosition - 1)) {
             setState(() {
+              preEnemyPosition = enemyStartPosition;
               enemyStartPosition--;
             });
             decideDirection(d: Direction.right);
@@ -145,6 +252,7 @@ class _HomeState extends State<Home> {
         case Direction.right:
           if (!barriers.contains(enemyStartPosition + 1)) {
             setState(() {
+              preEnemyPosition = enemyStartPosition;
               enemyStartPosition++;
             });
             decideDirection(d: Direction.left);
@@ -163,28 +271,40 @@ class _HomeState extends State<Home> {
     if (playerDirection == Direction.right) {
       if (!barriers.contains(playerStartPosition + 1)) {
         setState(() {
+          prePlayerPosition = playerStartPosition;
           playerStartPosition++;
+          getPoints(playerStartPosition);
+          pathPoint.remove(playerStartPosition);
         });
       }
     }
     if (playerDirection == Direction.left) {
       if (!barriers.contains(playerStartPosition - 1)) {
         setState(() {
+          prePlayerPosition = playerStartPosition;
           playerStartPosition--;
+          getPoints(playerStartPosition);
+          pathPoint.remove(playerStartPosition);
         });
       }
     }
     if (playerDirection == Direction.up) {
       if (!barriers.contains(playerStartPosition - columnLine)) {
         setState(() {
+          prePlayerPosition = playerStartPosition;
           playerStartPosition -= columnLine;
+          getPoints(playerStartPosition);
+          pathPoint.remove(playerStartPosition);
         });
       }
     }
     if (playerDirection == Direction.down) {
       if (!barriers.contains(playerStartPosition + columnLine)) {
         setState(() {
+          prePlayerPosition = playerStartPosition;
           playerStartPosition += columnLine;
+          getPoints(playerStartPosition);
+          pathPoint.remove(playerStartPosition);
         });
       }
     }
@@ -211,5 +331,73 @@ class _HomeState extends State<Home> {
     }
     direction.shuffle();
     myDirection = direction.first;
+  }
+
+  void buildPathPoint() {
+    pathPoint.clear();
+    for (int i = 0; i < (columnLine * rowLine) - 1; i++) {
+      if (!barriers.contains(i)) {
+        pathPoint.add(i);
+      }
+    }
+  }
+
+  void runTime() {
+    sTimer = Timer.periodic(const Duration(seconds: 1), (timer) => second++);
+    timer = Timer.periodic(Duration(milliseconds: gameSpeed), (timer) {
+      if (pathPoint.isEmpty) {
+        endTime();
+        setState(() {
+          gameState = GameState.finish;
+        });
+      }
+
+      if (collision()) {
+        endTime();
+        setState(() {
+          gameState = GameState.over;
+        });
+      } else {
+        enemyMoving();
+        playerMoving();
+      }
+    });
+  }
+
+  void endTime() {
+    if (timer != null) {
+      timer!.cancel();
+    }
+    if (sTimer != null) {
+      sTimer!.cancel();
+    }
+  }
+
+  bool collision() {
+    if (prePlayerPosition == enemyStartPosition &&
+        preEnemyPosition == playerStartPosition) {
+      return true;
+    } else if (playerStartPosition == enemyStartPosition) {
+      return true;
+    }
+    return false;
+  }
+
+  Widget startButton() {
+    return OutlinedButton(
+      onPressed: () {
+        gameState = GameState.game;
+        setting();
+        endTime();
+        runTime();
+      },
+      style: ButtonStyle(
+          fixedSize: MaterialStateProperty.all<Size>(const Size.fromHeight(50)),
+          backgroundColor: MaterialStateProperty.all<Color>(Colors.white)),
+      child: Text(
+        'START',
+        style: TextStyle(fontSize: MediaQuery.of(context).size.width * 0.08),
+      ),
+    );
   }
 }

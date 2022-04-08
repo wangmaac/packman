@@ -11,7 +11,6 @@ class Application extends StatelessWidget {
     GoRouter _goRouter = GoRouter(routes: [
       GoRoute(path: '/', builder: (context, state) => const Home()),
     ]);
-
     return MaterialApp.router(
         debugShowCheckedModeBanner: false,
         routeInformationParser: _goRouter.routeInformationParser,
