@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,7 @@ class _HomeState extends State<Home> {
   double speed = 5.0;
   int gameSpeed = 0;
 
-  late Direction myDirection;
+  late Direction enemyDirection;
   GameState gameState = GameState.game;
 
   late int enemyStartPosition = 12;
@@ -138,8 +139,36 @@ class _HomeState extends State<Home> {
                                   if (barriers.contains(index)) {
                                     return const TileLine();
                                   } else if (index == enemyStartPosition) {
+                                    if (enemyDirection == Direction.left) {
+                                      return Transform(
+                                        transform: Matrix4.rotationY(pi),
+                                        child: const Enemy(),
+                                        alignment: FractionalOffset.center,
+                                      );
+                                    }
                                     return const Enemy();
                                   } else if (index == playerStartPosition) {
+                                    if (playerDirection == Direction.left) {
+                                      return Transform(
+                                        transform: Matrix4.rotationY(pi),
+                                        alignment: FractionalOffset.center,
+                                        child: const Player(),
+                                      );
+                                    } else if (playerDirection ==
+                                        Direction.up) {
+                                      return Transform.rotate(
+                                        angle: pi * -0.5,
+                                        child: const Player(),
+                                        alignment: FractionalOffset.center,
+                                      );
+                                    } else if (playerDirection ==
+                                        Direction.down) {
+                                      return Transform.rotate(
+                                        angle: pi * 0.5,
+                                        child: const Player(),
+                                        alignment: FractionalOffset.center,
+                                      );
+                                    }
                                     return const Player();
                                   } else {
                                     if (pathPoint.contains(index)) {
@@ -212,6 +241,7 @@ class _HomeState extends State<Home> {
     getGameSpeed(speed);
     second = 0;
     myState = EnemyState.start;
+    enemyDirection = Direction.hold;
     playerDirection = Direction.hold;
     getPoint.clear();
     buildPathPoint();
@@ -221,7 +251,7 @@ class _HomeState extends State<Home> {
 
   void enemyMoving() {
     if (myState == EnemyState.moving) {
-      switch (myDirection) {
+      switch (enemyDirection) {
         case Direction.up:
           if (!barriers.contains(enemyStartPosition - columnLine)) {
             setState(() {
@@ -338,7 +368,7 @@ class _HomeState extends State<Home> {
       direction.remove(d);
     }
     direction.shuffle();
-    myDirection = direction.first;
+    enemyDirection = direction.first;
   }
 
   void buildPathPoint() {
