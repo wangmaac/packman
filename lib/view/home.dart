@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:packman/view/widgets/gameover.dart';
 import 'package:packman/view/widgets/path_black.dart';
