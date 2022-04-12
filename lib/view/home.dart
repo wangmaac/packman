@@ -24,7 +24,7 @@ class _HomeState extends State<Home> {
   int rowLine = 17;
   Timer? timer;
   Timer? sTimer;
-  int second = 0;
+  double second = 0.0;
 
   double speed = 5.0;
   int gameSpeed = 0;
@@ -380,7 +380,8 @@ class _HomeState extends State<Home> {
   }
 
   void runTime() {
-    sTimer = Timer.periodic(const Duration(seconds: 1), (timer) => second++);
+    sTimer =
+        Timer.periodic(const Duration(milliseconds: 10), (timer) => second++);
 
     timer = Timer.periodic(Duration(milliseconds: gameSpeed), (timer) {
       if (pathPoint.isEmpty) {
